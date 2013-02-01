@@ -25,12 +25,32 @@ module Crunchr
     return delta
   end
 
+  # Get the value from the data
+  #
+  #   # Given a data tree that looks like
+  #   { number: 1
+  #     collection: {
+  #       depth: 2
+  #     }
+  #     list: [ 1, 2, 3 ]
+  #   }
+  #
+  #   fetch("number")           # => 1
+  #   fetch("collection/depth") # => 2
+  #   fetch("n'existe pas")     # => nil
+  #   fetch("collection")       # => { depth: 2 }
+  #   fetch("list")             # => nil - NaN && !Hash
+  #
+  # When you supply a calculation to fetch, it will delegate to calculate
+  #   fetch("number : collection") # => 0.5 (1 / 2)
+  #
   def fetch(key)
     return calculate(key) if key =~ / [*\/:x+-] /
 
     key = key.split(/\//).collect(&:to_sym) if key =~ /\//
     value = nil
 
+    # fetch directly
     if [String, Symbol].include?(key.class)
       if self.data.has_key?(key)
         value = self.data.fetch(key)
@@ -45,7 +65,9 @@ module Crunchr
       end
     end
 
-    return value
+    if value.is_a?(Numeric) || value.is_a?(Hash)
+      return value
+    end
 
   rescue => ex
     if self.class.respond_to?(:logger) && !self.class.logger.nil?
@@ -109,15 +131,15 @@ module Crunchr
       table = []
 
       list.each do |statistic|
-        round_keys = keys.dup
+        iteration_keys = keys.dup
 
         if statistic.is_a?(Array)
-          statistic = flatten(statistic, opts)
+          (iteration_keys, statistic) = flatten(statistic, opts)
         end
 
         row = []
 
-        round_keys.each do |key|
+        iteration_keys.each do |key|
           value = zero()
 
           if key == :date
@@ -127,32 +149,37 @@ module Crunchr
 
           else
             value = statistic.fetch(key)
+
+            if value.respond_to? :round
+              value = case opts[:round]
+                      when nil
+                        value
+                      when 0
+                        value.round rescue value
+                      else
+                        value.round(opts[:round])
+                      end
+            end
+
+            value = opts[:str_fmt] % value if opts[:str_fmt]
+
+            value = value.to_f if value.is_a?(BigDecimal)
           end
-
-          if value.respond_to? :round
-            value = case opts[:round]
-                    when nil
-                      value
-                    when 0
-                      value.round rescue value
-                    else
-                      value.round(opts[:round])
-                    end
-          end
-
-          value = opts[:str_fmt] % value if opts[:str_fmt]
-
-          value = value.to_f if value.is_a?(BigDecimal)
 
           row << checked(value)
         end
 
         if opts[:delta] && table.any?
-          prev = table.last
+          new_row = []
           row.each_with_index do |value, idx|
             next unless value.kind_of?(Numeric)
-            row[idx] = checked(row[idx] - prev[idx])
+            new_row[idx] = checked(row[idx] - @prev[idx])
           end
+
+          @prev = row.dup
+          row = new_row
+        else
+          @prev = row
         end
 
         table << row
@@ -162,21 +189,21 @@ module Crunchr
     end
 
     def flatten(array, opts)
-      round_keys = opts[:keys].dup
+      keys = opts[:keys].dup
 
       # this must be an interval period : find the mean, sum, max, whatever
       opts[:list_operator] ||= :mean
 
-      collection = self.class.new( :data => {} )
+      collection = self.new( :data => {} )
 
-      round_keys.each_with_index do |key, idx|
+      keys.each_with_index do |key, idx|
         if key == :date
           collection.created_at = array.first.created_at
           next
         end
 
         collection_key = key.to_s.gsub(/[\s*\/:x+-]+/, '_')
-        round_keys[idx] = collection_key if collection_key != key
+        keys[idx] = collection_key if collection_key != key
 
         array.each do |item|
           collection.data[collection_key] ||= []
@@ -199,7 +226,7 @@ module Crunchr
       collection
       collection.readonly! if collection.respond_to?(:readonly!)
 
-      return collection
+      return [keys, collection]
     end
 
 
