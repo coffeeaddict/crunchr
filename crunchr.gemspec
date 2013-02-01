@@ -18,16 +18,19 @@ Gem::Specification.new do |s|
   ]
   s.files = [
     ".document",
+    ".rspec",
     "Gemfile",
+    "Gemfile.lock",
     "LICENSE.txt",
     "README.rdoc",
     "Rakefile",
     "VERSION",
+    "crunchr.gemspec",
     "lib/crunchr.rb",
     "lib/crunchr/active_record.rb",
     "lib/crunchr/core_ext.rb",
-    "test/helper.rb",
-    "test/test_crunchr.rb"
+    "spec/crunchr_spec.rb",
+    "spec/spec_helper.rb"
   ]
   s.homepage = "http://github.com/coffeeaddict/crunchr"
   s.licenses = ["MIT"]
@@ -39,20 +42,23 @@ Gem::Specification.new do |s|
     s.specification_version = 3
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
-      s.add_development_dependency(%q<shoulda>, [">= 0"])
+      s.add_development_dependency(%q<rspec>, ["~> 2.12"])
+      s.add_development_dependency(%q<mocha>, [">= 0"])
       s.add_development_dependency(%q<rdoc>, ["~> 3.12"])
       s.add_development_dependency(%q<bundler>, ["= 1.2.1"])
       s.add_development_dependency(%q<jeweler>, ["~> 1.8.4"])
       s.add_development_dependency(%q<rcov>, [">= 0"])
     else
-      s.add_dependency(%q<shoulda>, [">= 0"])
+      s.add_dependency(%q<rspec>, ["~> 2.12"])
+      s.add_dependency(%q<mocha>, [">= 0"])
       s.add_dependency(%q<rdoc>, ["~> 3.12"])
       s.add_dependency(%q<bundler>, ["= 1.2.1"])
       s.add_dependency(%q<jeweler>, ["~> 1.8.4"])
       s.add_dependency(%q<rcov>, [">= 0"])
     end
   else
-    s.add_dependency(%q<shoulda>, [">= 0"])
+    s.add_dependency(%q<rspec>, ["~> 2.12"])
+    s.add_dependency(%q<mocha>, [">= 0"])
     s.add_dependency(%q<rdoc>, ["~> 3.12"])
     s.add_dependency(%q<bundler>, ["= 1.2.1"])
     s.add_dependency(%q<jeweler>, ["~> 1.8.4"])
