@@ -24,8 +24,11 @@ deep_hash = {
 
 def gen_table_list
   list = []
+  prev_rabbit = rand(10)
   3.times do
-    list << TestClass.new( rabbits: rand(10), dogs: rand(20), cats: rand(40) )
+    list << TestClass.new(
+      rabbits: prev_rabbit += rand(10), dogs: rand(20), cats: rand(40)
+    )
   end
   list
 end
@@ -51,6 +54,18 @@ describe "Crunchr" do
 
     it "calculates the right value" do
       subject.fetch("keys - doors").should == -2
+    end
+
+    it "returns nil for non existing" do
+      subject.fetch("n'existe pas").should be_nil
+    end
+
+    it "return nil for non-numeric/hash values" do
+      subject.data[:hash] = { :depth => 2 }
+      subject.data[:arrray] = [ 1, 2 ]
+
+      subject.fetch("hash").should == { :depth => 2 }
+      subject.fetch("array").should be_nil
     end
   end
 
@@ -90,11 +105,63 @@ describe "Crunchr" do
         [ @list[2].data[:dogs], @list[2].data[:cats] - @list[2].data[:dogs] ],
       ]
 
-      TestClass.as_table(@list, keys: ['dogs' 'cats - dogs']).should == expected
+      TestClass.as_table(@list, keys: ['dogs', 'cats - dogs']).should == expected
     end
 
+    it "should make delta tables" do
+      expected = [
+        [ @list[0].data[:rabbits] ],
+        [ @list[1].data[:rabbits] - @list[0].data[:rabbits] ],
+        [ @list[2].data[:rabbits] - @list[1].data[:rabbits] ],
+      ]
+
+      TestClass.as_table(@list, keys: ['rabbits'], delta: true).should == expected
+    end
   end
 
   context "2d tables" do
+    before(:each) do
+      @list = []
+      3.times do
+        @list << gen_table_list
+      end
+    end
+
+    it "should flatten the list with the sum operator" do
+      res = TestClass.as_table(@list, keys: ['dogs - cats'], list_operator: :sum)
+      res.should == [
+        [ @list[0][0].data[:dogs] - @list[0][0].data[:cats] +
+          @list[0][1].data[:dogs] - @list[0][1].data[:cats] +
+          @list[0][2].data[:dogs] - @list[0][2].data[:cats]
+        ],
+        [ @list[1][0].data[:dogs] - @list[1][0].data[:cats] +
+          @list[1][1].data[:dogs] - @list[1][1].data[:cats] +
+          @list[1][2].data[:dogs] - @list[1][2].data[:cats]
+        ],
+        [ @list[2][0].data[:dogs] - @list[2][0].data[:cats] +
+          @list[2][1].data[:dogs] - @list[2][1].data[:cats] +
+          @list[2][2].data[:dogs] - @list[2][2].data[:cats]
+        ],
+      ]
+    end
+
+    it "should flatten the list with the mean operator" do
+      res = TestClass.as_table(@list, keys: ['dogs - cats'], list_operator: :mean)
+      res.should == [
+        [ ( @list[0][0].data[:dogs] - @list[0][0].data[:cats] +
+            @list[0][1].data[:dogs] - @list[0][1].data[:cats] +
+            @list[0][2].data[:dogs] - @list[0][2].data[:cats] ) / 3.0
+        ],
+        [ ( @list[1][0].data[:dogs] - @list[1][0].data[:cats] +
+            @list[1][1].data[:dogs] - @list[1][1].data[:cats] +
+            @list[1][2].data[:dogs] - @list[1][2].data[:cats] ) / 3.0
+        ],
+        [ ( @list[2][0].data[:dogs] - @list[2][0].data[:cats] +
+            @list[2][1].data[:dogs] - @list[2][1].data[:cats] +
+            @list[2][2].data[:dogs] - @list[2][2].data[:cats] ) / 3.0
+        ],
+      ]
+    end
+
   end
 end
