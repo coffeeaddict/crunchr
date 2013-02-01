@@ -1,16 +1,75 @@
 = crunchr
 
-Description goes here.
+  Given an ORM-model that makes snapshots with counts off your data
+  When I include Crunchr
+  Then I can do all kinds of nifty calculations
+
+== Synopsis
+
+  # Given an ORM-mode that makes snapshots
+  class Statistic < ActiveRecord::Base
+    serialize :data
+
+    def self.snapshot
+      Statistic.create(
+        data: {
+          keys: Key.count,
+          doors: Door.count,
+          rooms: {
+            count: Room.count,
+            occupied: Room.occupied.count
+          }
+        }
+      )
+    end
+
+    # When I include Crunchr
+    include Crunchr
+  end
+
+  # Then I can doo all kinds of nifty things
+  s = Statistic.last
+
+  # like, fetch data
+  s.fetch('keys')                # 10
+  s.fetch('doors')               # 8
+  s.fetch('rooms/count')         # 7
+
+  # do calculations
+  s.fetch('keys x doors')        # 80
+  s.fetch('keys - doors')        # 2 spare keys...
+  s.fetch('doors / rooms/count') # 1.1428 doors per room
+
+  # make deltas
+  delta = s.delta(Statistic.first)
+  delta.fetch('keys')           # 10 (now) - 5 (then) = 5
+  delta.fetch('keys - doors')   # 5 (see above) - 8   = -3
+  delta.fetch('rooms/occupied') # 0 (did not change)
+
+  # make tables
+  rows = Statistic.where( "created_at > ?", 1.week.ago )
+  Statistic.as_table( rows, keys: ['keys',  'doors', 'keys / doors'] )
+  # => [
+  #   [ 9, 8, 1.125 ]
+  #   [ 9, 8, 1.125 ]
+  #   [ 7, 8, 0.875 ]
+  #   [ 10, 8, 1.25 ]
+  # ]
 
 == Contributing to crunchr
- 
-* Check out the latest master to make sure the feature hasn't been implemented or the bug hasn't been fixed yet.
-* Check out the issue tracker to make sure someone already hasn't requested it and/or contributed it.
+
+* Check out the latest master to make sure the feature hasn't been
+  implemented or the bug hasn't been fixed yet.
+* Check out the issue tracker to make sure someone already hasn't requested
+  it and/or contributed it.
 * Fork the project.
 * Start a feature/bugfix branch.
 * Commit and push until you are happy with your contribution.
-* Make sure to add tests for it. This is important so I don't break it in a future version unintentionally.
-* Please try not to mess with the Rakefile, version, or history. If you want to have your own version, or is otherwise necessary, that is fine, but please isolate to its own commit so I can cherry-pick around it.
+* Make sure to add tests for it. This is important so I don't break it in a
+  future version unintentionally.
+* Please try not to mess with the Rakefile, version, or history. If you want
+  to have your own version, or is otherwise necessary, that is fine, but
+  please isolate to its own commit so I can cherry-pick around it.
 
 == Copyright
 

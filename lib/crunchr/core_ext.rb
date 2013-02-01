@@ -23,6 +23,10 @@ class Hash
 end
 
 class Array
+  def sum
+    self.inject(0.0) { |s, i| s += i }
+  end
+
   def mean
     (self.sum * 1.0) / self.count
   end
