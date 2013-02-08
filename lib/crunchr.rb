@@ -77,9 +77,25 @@ module Crunchr
 
   # given a string like 'keys - doors', returns the amount of spare keys
   #
+  # You can group calculations by surrounding them with (), eg:
+  #
+  #   (doors - keys) / (inhabitants - keys)
+  #
+  # @note
+  #   The result is *always* a float.
+  #   If anything fails, 0.0 is returned.
+  #
+  # @param  String key     The calculation to perform
+  # @return Float  result
+  #
   def calculate(key)
-    (left, op, right) = key.split(/\s/)
+    while key =~ /\(/ && key =~ /\)/
+      key.gsub!(/\(([^\(\)]+)\)/) do |calculation|
+        calculate(calculation.gsub(/[\(\)]/, ''))
+      end
+    end
 
+    (left, op, right) = key.split(/\s/)
 
     left = (
       left =~ /[^\d.]/ ? self.fetch(left) : BigDecimal.new(left)
@@ -109,7 +125,7 @@ module Crunchr
     # Or use lists in lists
     #   deep_list = [ list, list list ]
     #   table = Object.as_table(deep_list, keys: %[doors keys], list_operator: delta)
-    #   # => [ [ 2, 6 ] ]  (differnece of mac and min for both doors and keys)
+    #   # => [ [ 2, 6 ] ]  (difference of max and min for both doors and keys)
     #
     # @param [Array] list List (1d or 2d) of data objects
     # @param [Hash] opts Options

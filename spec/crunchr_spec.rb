@@ -164,4 +164,23 @@ describe "Crunchr" do
     end
 
   end
+
+  context "Extended calculations" do
+    before(:each) do
+      subject.data = deep_hash
+    end
+
+    it "performs calculations successively" do
+      subject.fetch("(loans/requested/GBP + loans/payed/GBP) - commission/pending/GBP").should == (0.65395 + 145.23) - 1.3079
+    end
+
+    it "handles nested groupings" do
+      subject.fetch("((users/count + users/active) + users/active) + users/count").should == (((14 + 2) + 2) + 14).to_f
+    end
+
+    it "ignores malformed groupings" do
+      subject.fetch("(users/count + users/active").should == 2.0  # 0 + 2
+      subject.fetch("((users/count + users/active) + 12").should == 12.0
+    end
+  end
 end
