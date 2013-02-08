@@ -56,6 +56,10 @@
   #   [ 10, 8, 1.25 ]
   # ]
 
+== TODO
+
+* Use created_at as a way to group data for ActiveModel (alike) includers
+
 == Contributing to crunchr
 
 * Check out the latest master to make sure the feature hasn't been
