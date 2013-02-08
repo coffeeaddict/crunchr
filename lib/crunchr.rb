@@ -81,6 +81,10 @@ module Crunchr
   #
   #   (doors - keys) / (inhabitants - keys)
   #
+  # Pass in real numbers if you like
+  #
+  #   (doors + 2) / keys
+  #
   # @note
   #   The result is *always* a float.
   #   If anything fails, 0.0 is returned.
@@ -117,32 +121,50 @@ module Crunchr
 
   module ClassMethods
     # pass in a list off data-objects with and get a nice table
-    #   list = [ Object.data({ doors: 1, keys: 2}), Object.data({ doors: 1, keys: 3 }, ... ]
+    #   list = [ Object.data({ doors: 1, keys: 2}),
+    #            Object.data({ doors: 1, keys: 3 },
+    #            ...
+    #          ]
     #
     #   table = Object.as_table(list, keys: %w[doors keys])
     #   # => [ [ 1, 2 ], [ 1, 3 ], [ 1, 4 ], [ 3, 8 ] ]
     #
     # Or use lists in lists
+    #
     #   deep_list = [ list, list list ]
-    #   table = Object.as_table(deep_list, keys: %[doors keys], list_operator: delta)
+    #   table = Object.as_table(
+    #     deep_list, keys: %[doors keys], list_operator: delta
+    #   )
     #   # => [ [ 2, 6 ] ]  (difference of max and min for both doors and keys)
+    #
+    # == Usage with dates/times
+    #
+    # If you include Crunchr into something Active-Modely that has 'created_at'
+    # as a (sane) attribute, you can supply a :date key, it will add a column
+    # with the value of created_at into the table. If you do not supply
+    # :date_fmt, it will call #to_date on the column
     #
     # @param [Array] list List (1d or 2d) of data objects
     # @param [Hash] opts Options
     # @option opts [Array] keys List of keys to fetch, may contain
     #     calculations, eg: ['doors', 'keys', 'doors / keys']
-    # @option opts [Symbol] list_operator With a 2d list, what operator to
-    #      apply to each given list to determine the 1d value, any of
-    #      - :mean
-    #      - :stddev
-    #      - :median
-    #      - :range
-    #      - :mode
-    #      - :sum
-    #      - :min
-    #      - ;max
+    # @option opts [Symbol] list_operator    With a 2d list, what operator to
+    #      apply to each given list to determine the 1d value see #delta for
+    #      more info
+    # @option opts [String] date_fmt  Use as input to #strftime for the value
+    #      in the date column
+    # @option opts [String] str_fmt   Use as input to #sprintf for the value
+    #      in **every** column. (Cannot be used together with :delta)
+    # @option opts [Boolean] delta    After the first row, fill every other row
+    #      with the difference to the previous row. (Cannot be used with
+    #      :str_fmt)
+    #
     def as_table(list, opts = {})
       keys = opts[:keys] || raise("Need keys")
+
+      if opts[:delta] && opts[:str_fmt]
+        raise ":delta and :str_fmt cannot be supplied together"
+      end
 
       table = []
 
@@ -204,6 +226,23 @@ module Crunchr
       return table
     end
 
+    # flatten an array of rows by applying an operator vertically on each
+    # column and accepting the result as a single row
+    #
+    # @param [Array] array List of lists
+    # @param [Hash] opts Options
+    # @option opts [Symbol] list_operator  What operator to apply to the array
+    #   to get a single value, defaults to :mean, should be any of
+    #      - :mean
+    #      - :stddev
+    #      - :median
+    #      - :range
+    #      - :mode
+    #      - :sum
+    #      - :min
+    #      - :max
+    #      - :delta (takes the difference of max and min)
+    #
     def flatten(array, opts)
       keys = opts[:keys].dup
 
@@ -245,11 +284,16 @@ module Crunchr
       return [keys, collection]
     end
 
-
+    # Return a BigDecimal zero value
     def zero
       BigDecimal.new("0.0")
     end
 
+    # Make sure the value is zero if it is NaN, infinite, or nil
+    # Turn the value into a float if it is a BigDecimal
+    #
+    # @param value  The value to check
+    # @return [Float, Integer] the improved value
     def checked(value)
       value = zero() if value.respond_to?(:nan?) && value.nan?
       value = zero() if value.respond_to?(:infinity?) && value.infinity?
