@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Hartog C. de Mik"]
-  s.date = "2013-02-01"
+  s.date = "2013-02-08"
   s.description = "Crunch statistics"
   s.email = "hartog@organisedminds.com"
   s.extra_rdoc_files = [
