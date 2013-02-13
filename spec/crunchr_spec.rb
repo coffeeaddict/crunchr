@@ -11,6 +11,7 @@ end
 
 deep_hash = {
   users: { count: 14, active: 2},
+  zero: 0.0,
   loans: {
     requested: { EUR: 781.284599, GBP: 0.65395, USD: 0.65395, AWG: 0.65395 },
     payed: { EUR: 130.42, GBP: 145.23 }
@@ -40,11 +41,15 @@ describe "Crunchr" do
 
   context "The basics" do
     before(:each) do
-      subject.data = { doors: 10, keys: 8 }
+      subject.data = { doors: 10, keys: 8, null: 0.00 }
     end
 
     it "fetches door" do
       subject.fetch("doors").should == 10
+    end
+
+    it "fetches zero values" do
+      subject.fetch("null").should == 0.0
     end
 
     it "calls calculate when a stmt is present" do
@@ -161,6 +166,27 @@ describe "Crunchr" do
             @list[2][2].data[:dogs] - @list[2][2].data[:cats] ) / 3.0
         ],
       ]
+    end
+  end
+
+  context "Deltas" do
+    before(:each) do
+      subject.data = deep_hash
+    end
+
+    it "should delta one object with another" do
+      comp = TestClass.new(deep_hash)
+      delta = subject.delta(comp)
+
+      delta.should be_kind_of(TestClass)
+      delta.data.should be_kind_of(Hash)
+      delta.data.should_not be_empty
+    end
+
+    it "should substract" do
+      comp = TestClass.new(deep_hash)
+      delta = subject.delta(comp)
+      delta.fetch("loans/requested/GBP").should == 0.0
     end
 
   end

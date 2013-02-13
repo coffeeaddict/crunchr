@@ -14,10 +14,11 @@ module Crunchr
   def checked(val); self.class.checked(val); end
 
   def delta(other)
-    return nil unless other.respond_to?(:data) && !other.data.is_a?(Hash)
+    return nil if other.respond_to?(:data) && !other.data.is_a?(Hash)
     return nil unless self.data.is_a?(Hash)
 
-    delta = self.class.new( :data => self.data.delta(other.data) )
+    delta      = self.class.new
+    delta.data = self.data.dup.delta(other.data)
 
     # make it read-only
     delta.readonly! if delta.respond_to?(:readonly!)
