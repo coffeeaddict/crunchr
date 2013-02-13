@@ -5,7 +5,7 @@
 
 Gem::Specification.new do |s|
   s.name = "crunchr"
-  s.version = "0.0.3"
+  s.version = "0.0.4"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Hartog C. de Mik"]
@@ -29,6 +29,7 @@ Gem::Specification.new do |s|
     "lib/crunchr.rb",
     "lib/crunchr/active_record.rb",
     "lib/crunchr/core_ext.rb",
+    "spec/core_ext_spec.rb",
     "spec/crunchr_spec.rb",
     "spec/spec_helper.rb"
   ]
