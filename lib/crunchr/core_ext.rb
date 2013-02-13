@@ -24,7 +24,7 @@ end
 
 class Array
   def sum
-    self.inject(0.0) { |s, i| s += i }
+    self.inject(0.0) { |s, i| (s += i) rescue s }
   end
 
   def mean
